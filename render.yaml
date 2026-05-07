@@ -1,0 +1,45 @@
+services:
+  # ── Python ML Service ──
+  - type: web
+    name: localbiz-ml
+    runtime: python
+    repo: https://github.com/vasutrehan/localbiz-ml
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URI
+        sync: false   # Set this manually in Render dashboard
+
+  # ── Node.js Backend ──
+  - type: web
+    name: localbiz-backend
+    runtime: node
+    repo: https://github.com/vasutrehan/localbiz-backend
+    branch: master
+    buildCommand: npm ci --only=production
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false   # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure secret
+      - key: JWT_EXPIRE
+        value: 30d
+      - key: JWT_COOKIE_EXPIRE
+        value: "30"
+      - key: ML_SERVICE_URL
+        fromService:
+          name: localbiz-ml
+          type: web
+          property: host
+      - key: MAX_FILE_UPLOAD
+        value: "5000000"
+      - key: FILE_UPLOAD_PATH
+        value: ./uploads
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
